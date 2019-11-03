@@ -1,42 +1,67 @@
 {
-    // Support task for EV3RT and EV3CXX
-    // Author: Jaroslav Páral (jarekparal)
-    "version": "0.1.0",
+    "version": "2.0.0",
     "tasks": [
         {
             "taskName": "build",
             "command": "C:\\RB3rt\\Make.bat",
             "isShellCommand": true,
-            "args": ["-b", "${fileDirname}"],
+            "args": [
+                "-b",
+                "${fileDirname}"
+            ],
             "showOutput": "always"
         },
         {
             "taskName": "upload",
             "command": "C:\\RB3rt\\Make.bat",
             "isShellCommand": true,
-            "args": ["-u"],
+            "args": [
+                "-u"
+            ],
             "showOutput": "always"
         },
         {
             "taskName": "make",
             "command": "C:\\RB3rt\\Make.bat",
             "isShellCommand": true,
-            "args": ["-m", "${fileDirname}"],
+            "args": [
+                "-m",
+                "${fileDirname}"
+            ],
             "showOutput": "always"
         },
         {
             "taskName": "lorris",
             "command": "c:\\Lorris\\Lorris.exe",
             "isShellCommand": true,
-            "args": [""],
+            "args": [
+                ""
+            ],
             "showOutput": "always"
         },
         {
             "taskName": "help",
             "command": "start",
             "isShellCommand": true,
-            "args": ["", "https://rb3rt.readthedocs.org"],
+            "args": [
+                "",
+                "https://rb3rt.readthedocs.org"
+            ],
             "showOutput": "always"
+        },
+        {
+            "type": "shell",
+            "label": "g++.exe build active file",
+            "command": "D:\\cygwin64\\bin\\g++.exe",
+            "args": [
+                "-g",
+                "${file}",
+                "-o",
+                "${fileDirname}\\${fileBasenameNoExtension}.exe"
+            ],
+            "options": {
+                "cwd": "D:\\cygwin64\\bin"
+            }
         }
     ]
 }
