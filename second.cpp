@@ -60,14 +60,14 @@ void align() {
     }
     motor_stop();
     on_for_counts(20, -20);
-    while ((25 > ev3_color_sensor_get_reflect(s1) || ev3_color_sensor_get_reflect(s1) > 35) && (25 > ev3_color_sensor_get_reflect(s2) || ev3_color_sensor_get_reflect(s2) > 35)) {
-        if (ev3_color_sensor_get_reflect(s1) > 40) {
-            ev3_motor_steer(left_motor, right_motor, 5, 50);
-        } else if (ev3_color_sensor_get_reflect(s2) > 40) {
-            ev3_motor_steer(left_motor, right_motor, 5, -50);
-        }
+    while (ev3_color_sensor_get_reflect(s1) > 30) {
+        ev3_motor_steer(left_motor, right_motor, 15, 50);
     }
     motor_stop();
+    while (ev3_color_sensor_get_reflect(s2) > 30) {
+        ev3_motor_steer(left_motor, right_motor, 15, -50);
+    }
+    motor_stop;
 }
 
 void ramping_right() {
