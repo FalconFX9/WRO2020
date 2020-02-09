@@ -37,8 +37,10 @@
         {
             "name": "Win32",
             "includePath": [
-                "C:/RB3rt/sdk/common/ev3api",
-                "C:/RB3rt/sdk/common/library/lib-ev3cxx"
+                "D:/Travail/ev3rt-hrp2/sdk/common/ev3api/include",
+                "D:/Travail/ev3rt-hrp2/sdk/common/library/libcpp-test/include",
+                "D:/Travail/ev3rt-hrp2/sdk/common/library/lib2/include",
+                "D:/cygwin64/usr/include/boost"
             ],
             "browse": {
                 "limitSymbolsToIncludedHeaders": true,
