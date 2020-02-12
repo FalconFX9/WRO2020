@@ -1,7 +1,7 @@
 /**
  * Line follower testing to check if ev3rt is adequate.
  *
- * Author: Arthur Goetzke-Coburn
+ * Author: Aruther Goetzgay-Cockburn
  */
 
 #include "ev3api.h"
