@@ -22,8 +22,8 @@ SYSTIM TimerMS(int unused) {
 //this is also an edit
 //this is an extra edit and it is an edit
 
-const sensor_port_t s1 = EV3_PORT_1, s2 = EV3_PORT_2;
-const motor_port_t left_motor = EV3_PORT_B, right_motor = EV3_PORT_C;
+const sensor_port_t g = EV3_PORT_1, s1 = EV3_PORT_1, s2 = EV3_PORT_2;
+const motor_port_t left_motor = EV3_PORT_B, right_motor = EV3_PORT_C, lift_motor = EV3_PORT_A, grab_motor = EV3_PORT_D;
 FILE *bt = ev3_serial_open_file(EV3_SERIAL_BT);
 
 class LineFollower {
@@ -164,20 +164,44 @@ void follow_for_lines(int lines, int side = 1, int option = 0) {
     motor_stop();
 }
 
+void lower() {
+    ev3_motor_rotate(lift_motor, -200, 10, true);
+}
+
+void open() {
+    ev3_motor_rotate(grab_motor, -460, 30, false);
+}
+
+void lift() {
+    ev3_motor_rotate(lift_motor, 200, 10, true);
+}
+
+void close() {
+    ev3_motor_rotate(grab_motor, -80, 30, true);
+}
+
 void main_task(intptr_t unused) {
     go_to_line();
     if (ev3_battery_voltage_mV() < 9500) {
         ev3_speaker_play_tone(500, 500);
     }
-    ev3_sensor_config(s1, COLOR_SENSOR);
-    ev3_sensor_config(s2, COLOR_SENSOR);
+    //ev3_sensor_config(s1, COLOR_SENSOR);
+    //ev3_sensor_config(s2, COLOR_SENSOR);
     // ev3_sensor_config(hitechnic, HT_NXT_COLOR_SENSOR);
     ev3_motor_config(left_motor, MEDIUM_MOTOR);
     ev3_motor_config(right_motor, MEDIUM_MOTOR);
+    ev3_motor_config(lift_motor, LARGE_MOTOR);
+    ev3_motor_config(grab_motor, MEDIUM_MOTOR);
+
+    open();
+    lower();
+    on_for_counts(800, 2 0);
+    close();
+    lift();
+    /*
     stop_at_YR();
     ramping_right();
     align();
-    /*
     int i = 0;
     while (true) {
         follow_for_lines(4, 1, 1);
