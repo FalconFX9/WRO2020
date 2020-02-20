@@ -2,6 +2,8 @@
 #include "libcpp-test.h"
 #include "app.h"
 
+const sensor_port_t gyro = EV3_PORT_1;
+
 void go_to_line() {
     while (ev3_color_sensor_get_reflect(s1) > 30) {
         ev3_motor_steer(left_motor, right_motor, 50, 0);
@@ -67,7 +69,7 @@ void align() {
     while (ev3_color_sensor_get_reflect(s2) > 30) {
         ev3_motor_steer(left_motor, right_motor, 15, -50);
     }
-    motor_stop;
+    motor_stop();
 }
 
 void ramping_right() {
@@ -86,4 +88,30 @@ void ramping_right() {
         }
     }
     motor_stop();
+}
+
+void pid_gyro() {
+    ev3_gyro_sensor_reset(gyro);
+    const float KP = 0.05;
+    float KI = 0.01;
+    int intergral = 0;
+    const float KD = 20;
+    int last_error = 0;
+    int derivative = 0;
+    float Turn = 0;
+    int error = 0;
+    int gyro_sensor = 0;
+    while (true) {
+        gyro_sensor = ev3_gyro_sensor_get_angle(gyro);
+        error = gyro_sensor;
+        intergral = intergral + error;
+        derivative = error - last_error;
+        Turn = (error * KP) + (KI * intergral) + (KD * derivative);
+        ev3_motor_steer(left_motor,right_motor,80,Turn);
+    }
+    
+
+
+
+     
 }
