@@ -70,7 +70,8 @@ extern void motor_stop();
 extern void stop_at_YR();
 extern void ramping_right();
 extern void on_for_counts(int counts, int power);
-extern const sensor_port_t s1, s2;
+extern void pid_gyro();
+extern const sensor_port_t s1, s2, gyro;
 extern const motor_port_t left_motor, right_motor;
 
 /**

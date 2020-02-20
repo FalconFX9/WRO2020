@@ -192,13 +192,14 @@ void main_task(intptr_t unused) {
     ev3_motor_config(right_motor, MEDIUM_MOTOR);
     ev3_motor_config(lift_motor, LARGE_MOTOR);
     ev3_motor_config(grab_motor, MEDIUM_MOTOR);
-
+    ev3_sensor_config(gyro, GYRO_SENSOR);
+    pid_gyro();
+    /*
     open();
     lower();
     on_for_counts(800, 2 0);
     close();
     lift();
-    /*
     stop_at_YR();
     ramping_right();
     align();
