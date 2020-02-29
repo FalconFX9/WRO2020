@@ -60,7 +60,7 @@ class LineFollower {
         
         derivative = error - last_error;
         integral = error + integral;
-        steering = ((error * KP) + (derivative * KD) + (integral * 0)) * side;
+        steering = ((error * KP) + (derivative * KD) + (integral * KI)) * side;
         if (abs((steering - last_steering)) > 15) {
             steering = 0;
         }
