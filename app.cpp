@@ -60,7 +60,7 @@ class LineFollower {
         
         derivative = error - last_error;
         integral = error + integral;
-        steering = ((error * KP) + (derivative * KD) + (integral * KI)) * side;
+        steering = ((error * KP) + (derivative * KD) + (integral * 0)) * side;
         if (abs((steering - last_steering)) > 15) {
             steering = 0;
         }
@@ -94,7 +94,7 @@ void motor_stop() {
 void on_for_counts(int counts, int power) {
     ev3_motor_reset_counts(left_motor);
     ev3_motor_reset_counts(right_motor);
-    while ((counts - abs(ev3_motor_get_counts(left_motor)) > 0)) {
+    while ((counts - abs(ev3_motor_get_counts(left_motor)) > 0) && (counts - abs(ev3_motor_get_counts(right_motor)) > 0)) {
         ev3_motor_steer(left_motor, right_motor, power, 0);
     }
     motor_stop();
@@ -164,8 +164,17 @@ void follow_for_lines(int lines, int side = 1, int option = 0) {
     motor_stop();
 }
 
+void sleep(unsigned long ms) {
+    unsigned long time0;
+    ClearTimerMS(0);
+    ClearTimer(0);
+    time0 = TimerMS(0);
+    while ((TimerMS(0) - time0) < ms) {  
+    }
+}
+
 void lower() {
-    ev3_motor_rotate(lift_motor, -200, 10, true);
+    ev3_motor_rotate(lift_motor, -175, 30, true);
 }
 
 void open() {
@@ -173,14 +182,24 @@ void open() {
 }
 
 void lift() {
-    ev3_motor_rotate(lift_motor, 200, 10, true);
+    ev3_motor_rotate(lift_motor, 178, 10, false);
 }
 
 void close() {
     ev3_motor_rotate(grab_motor, -80, 30, true);
 }
 
+void turn_left_gyro() {
+    ev3_gyro_sensor_reset(gyro);
+    while (abs(ev3_gyro_sensor_get_angle(gyro)) < 90) {
+        ev3_motor_steer(left_motor, right_motor, 30, -100);
+    }
+    motor_stop();
+}
+
 void main_task(intptr_t unused) {
+    ev3_sensor_config(gyro, GYRO_SENSOR);
+    ev3_gyro_sensor_reset(gyro);
     go_to_line();
     if (ev3_battery_voltage_mV() < 9500) {
         ev3_speaker_play_tone(500, 500);
@@ -192,14 +211,38 @@ void main_task(intptr_t unused) {
     ev3_motor_config(right_motor, MEDIUM_MOTOR);
     ev3_motor_config(lift_motor, LARGE_MOTOR);
     ev3_motor_config(grab_motor, MEDIUM_MOTOR);
-    ev3_sensor_config(gyro, GYRO_SENSOR);
-    pid_gyro();
-    /*
-    open();
+    //ev3_motor_steer(left_motor, right_motor, 80, 0);
+    //pid_gyro();
+    ev3_motor_rotate(lift_motor, 20, 20, true);
+    on_for_counts(300, 20);
+    gyro_turns(-18);
+    ev3_motor_rotate(grab_motor, 80, 40, true);
+    sleep(1000);
+    on_for_counts(85, -20);
+    sleep(1000);
+    gyro_turns(36);
+    sleep(1000);
+    gyro_turns(-18);
+    ev3_motor_rotate(grab_motor, 180, 50, true);
+    on_for_counts(200, 20);
+    on_for_counts(235, -20);
+    ev3_motor_rotate(lift_motor, 115, 30, true);
+    on_for_counts(150, -20);
     lower();
-    on_for_counts(800, 2 0);
-    close();
+    
+
+    /*
+    lower();
+    on_for_counts(240, 20);
+    ev3_motor_rotate(grab_motor, -110, 30, true);
     lift();
+    sleep(200);
+    gyro_turns(-90);
+    on_for_counts(380, 20);
+    gyro_turns(-90);
+    ev3_speaker_play_tone(500, 500);
+
+
     stop_at_YR();
     ramping_right();
     align();
