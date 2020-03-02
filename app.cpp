@@ -22,7 +22,7 @@ SYSTIM TimerMS(int unused) {
 //this is also an edit
 //this is an extra edit and it is an edit
 
-const sensor_port_t g = EV3_PORT_1, s1 = EV3_PORT_1, s2 = EV3_PORT_2;
+const sensor_port_t s1 = EV3_PORT_3, s2 = EV3_PORT_2;
 const motor_port_t left_motor = EV3_PORT_B, right_motor = EV3_PORT_C, lift_motor = EV3_PORT_A, grab_motor = EV3_PORT_D;
 FILE *bt = ev3_serial_open_file(EV3_SERIAL_BT);
 
@@ -86,6 +86,39 @@ class LineFollower {
     }
 };
 
+class pid_gyro {
+    public:
+        const float KP = 0.2;
+        float KI = 0;
+        int intergral = 0;
+        const float KD = 0.15;
+        int last_error = 0;
+        int derivative = 0;
+        float Turn = 0;
+        int error = 0;
+        int gyro_sensor = 0;
+        int i = 5;
+        char lcdstr[100];
+
+        void reset_gyro() {
+            while (ev3_gyro_sensor_get_angle(gyro) != 0) {
+                ev3_gyro_sensor_reset(gyro);
+                sleep(0.5);
+            }
+        }
+        
+        void follow(int power, int start_angle)  {
+            gyro_sensor = ev3_gyro_sensor_get_angle(gyro) - start_angle;
+            sprintf(lcdstr, "%4d degrees", gyro_sensor);
+	        ev3_lcd_draw_string(lcdstr, 10, 10);
+            error = gyro_sensor;
+            intergral = intergral + error;
+            derivative = error - last_error;
+            Turn = (error * KP) + (KI * intergral) + (KD * derivative);
+            ev3_motor_steer(left_motor,right_motor,power,Turn);
+        }
+};
+
 void motor_stop() {
     ev3_motor_stop(left_motor, true);
     ev3_motor_stop(right_motor, true);
@@ -94,9 +127,13 @@ void motor_stop() {
 void on_for_counts(int counts, int power) {
     ev3_motor_reset_counts(left_motor);
     ev3_motor_reset_counts(right_motor);
+    ramp_motors(power);
+    counts -= 50;
+    int start_angle = ev3_gyro_sensor_get_angle(gyro);
     while ((counts - abs(ev3_motor_get_counts(left_motor)) > 0) && (counts - abs(ev3_motor_get_counts(right_motor)) > 0)) {
-        ev3_motor_steer(left_motor, right_motor, power, 0);
+        pid_gyro().follow(power, start_angle);
     }
+    brake_motors(power);
     motor_stop();
 }
 
@@ -197,6 +234,29 @@ void turn_left_gyro() {
     motor_stop();
 }
 
+void place_concrete() {
+    ev3_motor_rotate(lift_motor, 20, 30, false);
+    on_for_counts(300, 20);
+    gyro_turns(-16);
+    ev3_motor_rotate(grab_motor, 80, 40, true);
+    on_for_counts(85, -20);
+    gyro_turns(32);
+    sleep(500);
+    gyro_turns(-18);
+    ev3_motor_rotate(grab_motor, 150, 50, true);
+    on_for_counts(200, 15);
+    ev3_motor_rotate(lift_motor, 115, 30, true);
+    on_for_counts(180, -20);
+    lower();
+    ev3_motor_rotate(lift_motor, -5, 30, true);
+    ev3_motor_rotate(grab_motor, -230, 50, true);
+    ev3_motor_rotate(lift_motor, 178, 10, true);
+    on_for_counts(165, 20);
+    ev3_motor_rotate(lift_motor, -30, 30, true);
+    ev3_motor_rotate(grab_motor, 80, 40, true);
+    on_for_counts(250, -20);
+}
+
 void main_task(intptr_t unused) {
     ev3_sensor_config(gyro, GYRO_SENSOR);
     ev3_gyro_sensor_reset(gyro);
@@ -204,33 +264,63 @@ void main_task(intptr_t unused) {
     if (ev3_battery_voltage_mV() < 9500) {
         ev3_speaker_play_tone(500, 500);
     }
-    //ev3_sensor_config(s1, COLOR_SENSOR);
-    //ev3_sensor_config(s2, COLOR_SENSOR);
+    ev3_sensor_config(s1, COLOR_SENSOR);
+    ev3_sensor_config(s2, COLOR_SENSOR);
     // ev3_sensor_config(hitechnic, HT_NXT_COLOR_SENSOR);
     ev3_motor_config(left_motor, MEDIUM_MOTOR);
     ev3_motor_config(right_motor, MEDIUM_MOTOR);
     ev3_motor_config(lift_motor, LARGE_MOTOR);
     ev3_motor_config(grab_motor, MEDIUM_MOTOR);
     //ev3_motor_steer(left_motor, right_motor, 80, 0);
-    //pid_gyro();
-    ev3_motor_rotate(lift_motor, 20, 20, true);
-    on_for_counts(300, 20);
-    gyro_turns(-18);
-    ev3_motor_rotate(grab_motor, 80, 40, true);
-    sleep(1000);
-    on_for_counts(85, -20);
-    sleep(1000);
-    gyro_turns(36);
-    sleep(1000);
-    gyro_turns(-18);
-    ev3_motor_rotate(grab_motor, 180, 50, true);
-    on_for_counts(200, 20);
-    on_for_counts(235, -20);
-    ev3_motor_rotate(lift_motor, 115, 30, true);
-    on_for_counts(150, -20);
-    lower();
+    pid_gyro().reset_gyro();
     
-
+    
+    ev3_motor_steer(left_motor, right_motor, -80, 0);
+    sleep(1150);
+    motor_stop();
+    sleep(150);
+    on_for_counts(800, 40);
+    sleep(300);
+    gyro_turns(90);
+    motor_stop();
+    sleep(300);
+    pid_gyro().reset_gyro();
+    int start_angle = ev3_gyro_sensor_get_angle(gyro);
+    while (ev3_color_sensor_get_color(s1) != COLOR_WHITE && ev3_color_sensor_get_color(s2) != COLOR_WHITE){
+        ramp_motors(40);
+        pid_gyro().follow(40, start_angle);
+        sleep(3000);
+    }
+    while (ev3_color_sensor_get_color(s1) != COLOR_GREEN && ev3_color_sensor_get_color(s2) != COLOR_BLUE) {
+        pid_gyro().follow(40, start_angle);
+    } 
+    brake_motors(40);
+    motor_stop();
+    gyro_turns(-90);
+    sleep(500);
+    pid_gyro().reset_gyro();
+    start_angle = ev3_gyro_sensor_get_angle(gyro);
+    while (ev3_color_sensor_get_color(s1) != COLOR_WHITE && ev3_color_sensor_get_color(s2) != COLOR_WHITE){
+        ramp_motors(40);
+        pid_gyro().follow(40, start_angle);
+    }
+    while (ev3_color_sensor_get_color(s1) != COLOR_BLACK && ev3_color_sensor_get_color(s2) != COLOR_BLACK) {
+        pid_gyro().follow(40, start_angle);
+    } 
+    brake_motors(40);
+    motor_stop();
+    align(-10, COLOR_WHITE);
+    align(10, COLOR_BLACK);
+    gyro_turns(90);
+    sleep(500);
+    pid_gyro().reset_gyro();
+    on_for_counts(500, 40);
+    ev3_motor_rotate(grab_motor, -420, 50, true);
+    lower();
+    on_for_counts(240, 20);
+    ev3_motor_rotate(grab_motor, -140, 30, true);
+    lift();
+    sleep(200);
     /*
     lower();
     on_for_counts(240, 20);

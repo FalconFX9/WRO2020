@@ -3,6 +3,8 @@
 #include "app.h"
 #include <stdio.h>
 #include <stdlib.h>
+#define ClearTimer(...)
+#define ClearTimerMS(...)
 
 const sensor_port_t gyro = EV3_PORT_1;
 
@@ -58,20 +60,26 @@ void turn_right(int option) {
     motor_stop();
 }
 
-void align() {
-    while (ev3_color_sensor_get_reflect(s1) > 30 || ev3_color_sensor_get_reflect(s2) > 30) {
-        ev3_motor_steer(left_motor, right_motor, 10, 0);
+void ramp_motors(int speed) {
+    unsigned long time0 = TimerMS(0);
+    ClearTimer(0);
+    ClearTimerMS(0);
+    int power = 0;
+    while ((TimerMS(0) - time0) < 500) {
+        power = (500 - (TimerMS(0) - time0)) * ((speed - 10)/500);
+        ev3_motor_steer(left_motor, right_motor, (speed - power), 0);
     }
-    motor_stop();
-    on_for_counts(20, -20);
-    while (ev3_color_sensor_get_reflect(s1) > 30) {
-        ev3_motor_steer(left_motor, right_motor, 15, 50);
+}
+
+void brake_motors(int speed) {
+    unsigned long time0 = TimerMS(0);
+    ClearTimer(0);
+    ClearTimerMS(0);
+    int power = 0;
+    while ((TimerMS(0) - time0) < 500) {
+        power = (500 - (TimerMS(0) - time0)) * (speed/500);
+        ev3_motor_steer(left_motor, right_motor, (power), 0);
     }
-    motor_stop();
-    while (ev3_color_sensor_get_reflect(s2) > 30) {
-        ev3_motor_steer(left_motor, right_motor, 15, -50);
-    }
-    motor_stop();
 }
 
 void ramping_cnts(int counts, int speed) {
@@ -79,12 +87,12 @@ void ramping_cnts(int counts, int speed) {
     ev3_motor_reset_counts(right_motor);
     int ct_diff;
     while (counts - ev3_motor_get_counts(left_motor) > 0) {
-        if (ev3_motor_get_counts(left_motor) < 50) {
+        if (ev3_motor_get_counts(left_motor) < 100) {
             ct_diff = 50 - ev3_motor_get_counts(left_motor);
-            ev3_motor_steer(left_motor, right_motor, (5 + ((ct_diff/2) * (counts/50))), 0);
-        } else if (ev3_motor_get_counts(left_motor) > (counts - 50)) {
+            ev3_motor_steer(left_motor, right_motor, (5 + ((ct_diff/2) * (counts/100))), 0);
+        } else if (ev3_motor_get_counts(left_motor) > (counts - 100)) {
             ct_diff = counts - ev3_motor_get_counts(left_motor);
-            ev3_motor_steer(left_motor, right_motor, (5 + ((ct_diff/2) * (counts/50))), 0);
+            ev3_motor_steer(left_motor, right_motor, (5 + ((ct_diff/2) * (counts/100))), 0);
         } else {
             ev3_motor_steer(left_motor, right_motor, speed, 0);
         }
@@ -92,10 +100,26 @@ void ramping_cnts(int counts, int speed) {
     motor_stop();
 }
 
+void align(int speed, colorid_t color) {
+    ev3_motor_set_power(left_motor, speed);
+    ev3_motor_set_power(right_motor, speed);
+    bool s1_c = true, s2_c = true;
+    while (s1_c || s2_c) {
+        if (ev3_color_sensor_get_color(s1) == color) {
+            ev3_motor_stop(left_motor, true);
+            s1_c = false;
+        }
+        if (ev3_color_sensor_get_color(s2) == color) {
+            ev3_motor_stop(left_motor, right_motor);
+            s2_c = false;
+        }
+    }
+}
+
 void gyro_turns(int angle) {
     const float KP = 0.15;
     const float KD = 0.15;
-    const float KI = 0.0001;
+    const float KI = 0.00001;
     int integral = 0;
     int error = 0;
     int last_error = 0;
@@ -103,10 +127,7 @@ void gyro_turns(int angle) {
     int power = 0;
     int ng_power = 0;
     ev3_gyro_sensor_reset(gyro);
-    char lcdstr[100];
     while (abs(ev3_gyro_sensor_get_angle(gyro)) < abs(angle) - 2) {
-        sprintf(lcdstr, "%4d degrees", abs(ev3_gyro_sensor_get_angle(gyro)));
-	    ev3_lcd_draw_string(lcdstr, 10, 10);
         error = abs(angle) - abs(ev3_gyro_sensor_get_angle(gyro));
         integral = integral + error;
         derivative = error - last_error;
@@ -125,26 +146,4 @@ void gyro_turns(int angle) {
     motor_stop();
 }
 
-void pid_gyro() {
-    const float KP = 0.2;
-    float KI = 0;
-    int intergral = 0;
-    const float KD = 0.15;
-    int last_error = 0;
-    int derivative = 0;
-    float Turn = 0;
-    int error = 0;
-    int gyro_sensor = 0;
-    int i = 5;
-    while (true) {
-        gyro_sensor = ev3_gyro_sensor_get_angle(gyro);
-        error = gyro_sensor;
-        intergral = intergral + error;
-        derivative = error - last_error;
-        Turn = (error * KP) + (KI * intergral) + (KD * derivative);
-        if (i < 80) {
-            i += 1;
-        }
-        ev3_motor_steer(left_motor,right_motor,i,Turn);
-    }     
-}
+
