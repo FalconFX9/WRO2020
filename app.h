@@ -62,7 +62,7 @@ extern "C" {
 #include "target_test.h"
 #include <kernel.h>
 
-extern void align();
+extern void align(int speed, colorid_t color);
 extern void go_to_line();
 extern void turn_left(int option);
 extern void turn_right(int option);
@@ -70,9 +70,11 @@ extern void motor_stop();
 extern void stop_at_YR();
 extern void ramping_cnts(int counts, int speed);
 extern void on_for_counts(int counts, int power);
-extern void pid_gyro();
 extern void gyro_turns(int angle);
 extern void sleep(unsigned long ms);
+extern SYSTIM TimerMS(int unused);
+extern void ramp_motors(int speed);
+extern void brake_motors(int speed);
 extern const sensor_port_t s1, s2, gyro;
 extern const motor_port_t left_motor, right_motor;
 
