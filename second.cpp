@@ -145,5 +145,3 @@ void gyro_turns(int angle) {
     }
     motor_stop();
 }
-
-
