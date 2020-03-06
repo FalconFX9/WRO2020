@@ -110,37 +110,32 @@ void align(int speed, colorid_t color) {
             s1_c = false;
         }
         if (ev3_color_sensor_get_color(s2) == color) {
-            ev3_motor_stop(left_motor, right_motor);
+            ev3_motor_stop(right_motor, true);
             s2_c = false;
         }
     }
 }
 
 void gyro_turns(int angle) {
-    const float KP = 0.15;
-    const float KD = 0.15;
-    const float KI = 0.00001;
+    const float KP = 0.1;
+    const float KD = 0.1;
+    const float KI = 0.0001;
     int integral = 0;
     int error = 0;
     int last_error = 0;
     int derivative = 0;
     int power = 0;
-    int ng_power = 0;
-    ev3_gyro_sensor_reset(gyro);
-    while (abs(ev3_gyro_sensor_get_angle(gyro)) < abs(angle) - 2) {
-        error = abs(angle) - abs(ev3_gyro_sensor_get_angle(gyro));
+    int start_angle = ev3_gyro_sensor_get_angle(gyro);
+    while (abs(ev3_gyro_sensor_get_angle(gyro) - start_angle) < (abs(angle) - 2)) {
+        error = abs((angle + start_angle) - ev3_gyro_sensor_get_angle(gyro));
+        fprintf(bt, "%d\n", error);
         integral = integral + error;
         derivative = error - last_error;
         power = (error * KP) + (integral * KI) + (derivative * KD);
-        if (abs(ev3_gyro_sensor_get_angle(gyro)) < 30) {
-            ng_power = (30 - abs(ev3_gyro_sensor_get_angle(gyro))) / 2;
+        if (angle < 0) {
+            ev3_motor_steer(left_motor, right_motor, power + 2, -50);
         } else {
-            ng_power = 0;
-        }
-        if (angle > 0) {
-            ev3_motor_steer(left_motor, right_motor, power + 2, -100);
-        } else {
-            ev3_motor_steer(left_motor, right_motor, power + 2, 100);
+            ev3_motor_steer(left_motor, right_motor, power + 2, 50);
         }
     }
     motor_stop();
