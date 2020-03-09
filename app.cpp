@@ -120,11 +120,16 @@ class pid_gyro {
 };
 
 void motor_stop() {
+    //Abruptly stops the motors
     ev3_motor_stop(left_motor, true);
     ev3_motor_stop(right_motor, true);
 }
 
 void on_for_counts(int counts, int power, int brake=1, int angle=0) {
+    //Turns on the motors to go straight with the help of the gyro PID for the specified amount of tacho-counts (equivalent to degrees of rotation) -- must be positive
+    //Power is the specified speed, and can be positive or negative
+    //Brake tells the motors to slow down at the end or not. By default, the robot will stop.
+    //Angle is the target angle, if we want to assume robot orientation instead of measuring it
     ev3_motor_reset_counts(left_motor);
     ev3_motor_reset_counts(right_motor);
     ramp_motors(power);
@@ -144,6 +149,9 @@ void on_for_counts(int counts, int power, int brake=1, int angle=0) {
 }
 
 void on_for_counts_motor(int counts, int power, int brake=1) {
+    //Turns on the motors to go straight for the specified amount of tacho-counts (equivalent to degrees of rotation) -- must be positive
+    //Power is the specified speed, and can be positive or negative
+    //Brake tells the motors to slow down at the end or not. By default, the robot will stop.
     ev3_motor_reset_counts(left_motor);
     ev3_motor_reset_counts(right_motor);
     ramp_motors(power);
@@ -162,28 +170,6 @@ void on_for_counts_motor(int counts, int power, int brake=1) {
     
 }
 
-void follow_for_counts(int counts, int option = 0, int side = 1) {
-    ev3_motor_reset_counts(left_motor);
-    ev3_motor_reset_counts(right_motor);
-    if (option == 1) {
-        while (counts - ev3_motor_get_counts(left_motor) > 0) {
-            int sensor_value = ev3_color_sensor_get_reflect(s2);
-            LineFollower().follower(sensor_value, side);
-        }
-    } else if (option == 2 ) {
-        while (counts - ev3_motor_get_counts(left_motor) > 0) {
-            int s1_value = ev3_color_sensor_get_reflect(s1);
-            int s2_value = ev3_color_sensor_get_reflect(s2);
-            LineFollower().two_sensor(s1_value, s2_value);
-        } 
-    } else {
-        while (counts - ev3_motor_get_counts(left_motor) > 0) {
-            int sensor_value = ev3_color_sensor_get_reflect(s1);
-            LineFollower().follower(sensor_value, side);
-        }
-    }
-}
-
 void follow_to_line(int option = 0, int side = 1) {
     if (option == 1) {
         while (ev3_color_sensor_get_color(s1) != COLOR_BLACK) {
@@ -194,33 +180,6 @@ void follow_to_line(int option = 0, int side = 1) {
         while (ev3_color_sensor_get_reflect(s2) > 20) {
             int sensor_value = ev3_color_sensor_get_reflect(s1);
             LineFollower().follower(sensor_value, side);
-        }
-    }
-    motor_stop();
-}
-
-void follow_for_lines(int lines, int side = 1, int option = 0) {
-    unsigned long time0;
-    int lines_seen = 0;
-    int s1_value, s2_value;
-    ClearTimerMS(0);
-    ClearTimer(0);
-    time0 = TimerMS(0);
-    while (lines_seen < lines) {
-        if (option == 1) {
-            s2_value = ev3_color_sensor_get_reflect(s1);
-            s1_value = ev3_color_sensor_get_reflect(s2);
-        } else {
-            s1_value = ev3_color_sensor_get_reflect(s1);
-            s2_value = ev3_color_sensor_get_reflect(s2);
-        }
-        LineFollower().follower(s1_value, side);
-        if (s2_value < 30 && (TimerMS(0) - time0) > 75) {
-            //if (lines_seen != lines - 1) {
-            //    follow_for_counts(50, 0, side);
-            //}
-            lines_seen++;
-            time0 = TimerMS(0);
         }
     }
     motor_stop();

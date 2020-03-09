@@ -70,6 +70,7 @@ extern void motor_stop();
 extern void stop_at_YR();
 extern void ramping_cnts(int counts, int speed);
 extern void on_for_counts(int counts, int power, int brake, int angle);
+extern void follow_for_counts(int counts, int option, int side);
 extern void gyro_turns(int angle);
 extern void sleep(unsigned long ms);
 extern SYSTIM TimerMS(int unused);

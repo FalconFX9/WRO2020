@@ -6,59 +6,8 @@
 #define ClearTimer(...)
 #define ClearTimerMS(...)
 
-void go_to_line() {
-    while (ev3_color_sensor_get_reflect(s1) > 30) {
-        ev3_motor_steer(left_motor, right_motor, 50, 0);
-    }
-}
-
-void stop_at_YR() {
-    while (ev3_color_sensor_get_color(s1) != COLOR_WHITE && ev3_color_sensor_get_color(s2) != COLOR_WHITE){
-        ev3_motor_steer(left_motor, right_motor, 40, 0);
-    }
-    while (ev3_color_sensor_get_color(s1) != COLOR_YELLOW && ev3_color_sensor_get_color(s2) != COLOR_RED) {
-        ev3_motor_steer(left_motor, right_motor, 40, 0);
-    } 
-    motor_stop();
-}
-
-void turn_left(int option) {
-    ev3_motor_reset_counts(left_motor);
-    ev3_motor_reset_counts(right_motor);
-    while (250 - ev3_motor_get_counts(right_motor) > 0) {
-        ev3_motor_steer(left_motor, right_motor, 30, -100);
-    }
-    if (option == 1) {
-        while (ev3_color_sensor_get_reflect(s2) > 30) {
-            ev3_motor_steer(left_motor, right_motor, 20, -100);
-        }
-    } else {
-        while (ev3_color_sensor_get_reflect(s1) > 30) {
-            ev3_motor_steer(left_motor, right_motor, 20, -100);
-        }
-    }
-    motor_stop();
-}
-
-void turn_right(int option) {
-    ev3_motor_reset_counts(left_motor);
-    ev3_motor_reset_counts(right_motor);
-    while (225 - ev3_motor_get_counts(left_motor) > 0) {
-        ev3_motor_steer(left_motor, right_motor, 30, 100);
-    }
-    if (option == 1) {
-        while (ev3_color_sensor_get_reflect(s2) > 30) {
-            ev3_motor_steer(left_motor, right_motor, 20, 100);
-        }
-    } else {
-        while (ev3_color_sensor_get_reflect(s1) > 30) {
-            ev3_motor_steer(left_motor, right_motor, 20, 100);
-        }
-    }
-    motor_stop();
-}
-
 void ramp_motors(int speed) {
+    //Ramps up the motors over 500ms to the desired speed
     unsigned long time0 = TimerMS(0);
     ClearTimer(0);
     ClearTimerMS(0);
@@ -70,6 +19,7 @@ void ramp_motors(int speed) {
 }
 
 void brake_motors(int speed) {
+    //Slows down the motors over 500ms from the initial speed
     unsigned long time0 = TimerMS(0);
     ClearTimer(0);
     ClearTimerMS(0);
@@ -80,25 +30,8 @@ void brake_motors(int speed) {
     }
 }
 
-void ramping_cnts(int counts, int speed) {
-    ev3_motor_reset_counts(left_motor);
-    ev3_motor_reset_counts(right_motor);
-    int ct_diff;
-    while (counts - ev3_motor_get_counts(left_motor) > 0) {
-        if (ev3_motor_get_counts(left_motor) < 100) {
-            ct_diff = 50 - ev3_motor_get_counts(left_motor);
-            ev3_motor_steer(left_motor, right_motor, (5 + ((ct_diff/2) * (counts/100))), 0);
-        } else if (ev3_motor_get_counts(left_motor) > (counts - 100)) {
-            ct_diff = counts - ev3_motor_get_counts(left_motor);
-            ev3_motor_steer(left_motor, right_motor, (5 + ((ct_diff/2) * (counts/100))), 0);
-        } else {
-            ev3_motor_steer(left_motor, right_motor, speed, 0);
-        }
-    }
-    motor_stop();
-}
-
 void align(int speed, colorid_t color) {
+    //Aligns the robot against a black line (line squarring)
     ev3_motor_set_power(left_motor, speed);
     ev3_motor_set_power(right_motor, speed);
     bool s1_c = true, s2_c = true;
@@ -115,6 +48,7 @@ void align(int speed, colorid_t color) {
 }
 
 void gyro_turns(int angle) {
+    //Uses a PID controller for more "effective" turns. The turn function is preferred over this one.
     const float KP = 0.1;
     const float KD = 0.1;
     const float KI = 0.0001;
@@ -134,6 +68,58 @@ void gyro_turns(int angle) {
             ev3_motor_steer(left_motor, right_motor, power + 2, -50);
         } else {
             ev3_motor_steer(left_motor, right_motor, power + 2, 50);
+        }
+    }
+    motor_stop();
+}
+
+void follow_for_counts(int counts, int option = 0, int side = 1) {
+    //Follows the line for specified counts
+    //Option changes what sensor is used, while side changes the side of the line the sensor will follow.
+    ev3_motor_reset_counts(left_motor);
+    ev3_motor_reset_counts(right_motor);
+    if (option == 1) {
+        while (counts - ev3_motor_get_counts(left_motor) > 0) {
+            int sensor_value = ev3_color_sensor_get_reflect(s2);
+            LineFollower().follower(sensor_value, side);
+        }
+    } else if (option == 2 ) {
+        while (counts - ev3_motor_get_counts(left_motor) > 0) {
+            int s1_value = ev3_color_sensor_get_reflect(s1);
+            int s2_value = ev3_color_sensor_get_reflect(s2);
+            LineFollower().two_sensor(s1_value, s2_value);
+        } 
+    } else {
+        while (counts - ev3_motor_get_counts(left_motor) > 0) {
+            int sensor_value = ev3_color_sensor_get_reflect(s1);
+            LineFollower().follower(sensor_value, side);
+        }
+    }
+}
+
+void follow_for_lines(int lines, int side = 1, int option = 0) {
+    //Follows a line for lines amoung of lines, along the specified side of the line, using the sensor designated by option.
+    unsigned long time0;
+    int lines_seen = 0;
+    int s1_value, s2_value;
+    ClearTimerMS(0);
+    ClearTimer(0);
+    time0 = TimerMS(0);
+    while (lines_seen < lines) {
+        if (option == 1) {
+            s2_value = ev3_color_sensor_get_reflect(s1);
+            s1_value = ev3_color_sensor_get_reflect(s2);
+        } else {
+            s1_value = ev3_color_sensor_get_reflect(s1);
+            s2_value = ev3_color_sensor_get_reflect(s2);
+        }
+        LineFollower().follower(s1_value, side);
+        if (s2_value < 30 && (TimerMS(0) - time0) > 75) {
+            //if (lines_seen != lines - 1) {
+            //    follow_for_counts(50, 0, side);
+            //}
+            lines_seen++;
+            time0 = TimerMS(0);
         }
     }
     motor_stop();
