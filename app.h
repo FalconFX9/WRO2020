@@ -73,9 +73,10 @@ extern void on_for_counts(int counts, int power, int brake, int angle);
 extern void gyro_turns(int angle);
 extern void sleep(unsigned long ms);
 extern SYSTIM TimerMS(int unused);
+extern void turns(int angle, int slow);
 extern void ramp_motors(int speed);
 extern void brake_motors(int speed);
-extern const sensor_port_t s1, s2, gyro;
+extern const sensor_port_t s1, s2, gyro, hitechnic;
 extern const motor_port_t left_motor, right_motor;
 extern FILE *bt;
 
