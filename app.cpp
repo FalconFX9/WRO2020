@@ -272,6 +272,29 @@ void turn(int angle, int slow=1) {
     motor_stop();
 }
 
+void run_to_line(int speed) {
+    //Checks for white then black on both the sensors to stop at the black line
+    while (ev3_color_sensor_get_color(s1) != COLOR_WHITE && ev3_color_sensor_get_color(s2) != COLOR_WHITE){
+        ev3_motor_steer(left_motor, right_motor, speed, 2);
+    }
+    while (ev3_color_sensor_get_color(s1) != COLOR_BLACK && ev3_color_sensor_get_color(s2) != COLOR_BLACK) {
+        ev3_motor_steer(left_motor, right_motor, speed, 2);
+    }
+    stop(speed);
+}
+
+void stop(int speed) {
+    //Gradually slows down the motors to 10% power then stops them
+    brake_motors(speed);
+    motor_stop();
+}
+
+void on_for_time(int speed, int time) {
+    ev3_motor_steer(left_motor, right_motor, speed, 0);
+    sleep(time);
+    motor_stop();
+}
+
 void place_concrete() {
     //Lifts the claw up a bit ove the block to avoid excess friction
     ev3_motor_rotate(lift_motor, 20, 30, false);
@@ -318,9 +341,7 @@ void get_sandbags_from_start() {
     //Reset gyro
     pid_gyro().reset_gyro();
     //Goes back until the robot hits the wall
-    ev3_motor_steer(left_motor, right_motor, -60, 0);
-    sleep(1150);
-    motor_stop();
+    on_for_time(-60, 1150);
     //Sleep to make sure the robot stops moving
     sleep(300);
     //Goes from the wall to the middle of the mat
@@ -339,25 +360,14 @@ void get_sandbags_from_start() {
         ev3_motor_steer(left_motor, right_motor, 50, 2);
     } 
     //Gradually slows down the motors then stops them
-    brake_motors(40);
-    motor_stop();
+    stop(40);
     //Turns to the left
     turn(-90);
     sleep(500);
     //Checks for white then black on both the sensors to stop at the black line
-    while (ev3_color_sensor_get_color(s1) != COLOR_WHITE && ev3_color_sensor_get_color(s2) != COLOR_WHITE){
-        ev3_motor_steer(left_motor, right_motor, 50, 0);
-    }
-    while (ev3_color_sensor_get_color(s1) != COLOR_BLACK && ev3_color_sensor_get_color(s2) != COLOR_BLACK) {
-        ev3_motor_steer(left_motor, right_motor, 50, 0);
-    } 
-    //Gradually slows down the motors then stops them
-    brake_motors(40);
-    motor_stop();
+    run_to_line(50);
     //Backs up for 250ms at -20 power to get behind the line so the robot can align itself
-    ev3_motor_steer(left_motor, right_motor, -20, 0);
-    sleep(250);
-    motor_stop();
+    on_for_time(-20, 250);
     //Robot aligns itself against the black line
     align(8, COLOR_BLACK);
     sleep(100);
@@ -368,25 +378,12 @@ void get_sandbags_from_start() {
     //Turns right
     turn(90);
     sleep(200);
-    //Sets the start angle for the gyro PID straight-line controller
-    //This could be swapped out for normal motor control
-    int start_angle = ev3_gyro_sensor_get_angle(gyro);
     //Accelerates motors to 40
     ramp_motors(40);
     //Checks for white then black on both the sensors to stop at the black line
-    while (ev3_color_sensor_get_color(s1) != COLOR_WHITE && ev3_color_sensor_get_color(s2) != COLOR_WHITE){
-        pid_gyro().follow(40, start_angle);
-    }
-    while (ev3_color_sensor_get_color(s1) != COLOR_BLACK && ev3_color_sensor_get_color(s2) != COLOR_BLACK) {
-        pid_gyro().follow(40, start_angle);
-    }
-    //Gradually slows down the motors then stops them
-    brake_motors(40);
-    motor_stop();
+    run_to_line(40);
     //Goes back for 250ms to get behind the line
-    ev3_motor_steer(left_motor, right_motor, -20, 0);
-    sleep(250);
-    motor_stop();
+    on_for_time(-20, 250);
     //Robot aligns itself against the black line
     align(8, COLOR_BLACK);
     //Open the claw
@@ -413,19 +410,9 @@ void go_to_house() {
     //Goes forward to about the middle, to avoid false detection triggers of the next action
     on_for_counts_motor(600, 40, 0);
     //Checks for white then black on both the sensors to stop at the black line
-    while (ev3_color_sensor_get_color(s1) != COLOR_WHITE && ev3_color_sensor_get_color(s2) != COLOR_WHITE){
-        ev3_motor_steer(left_motor, right_motor, 30, 2);
-    }
-    while (ev3_color_sensor_get_color(s1) != COLOR_BLACK && ev3_color_sensor_get_color(s2) != COLOR_BLACK) {
-        ev3_motor_steer(left_motor, right_motor, 30, 2);
-    }
-    //Gradually slows down the motors then stops them
-    brake_motors(30);
-    motor_stop();
+    run_to_line(30);
     //Backs up from the line to allow the robot to align itself after
-    ev3_motor_steer(left_motor, right_motor, -20, 0);
-    sleep(250);
-    motor_stop();
+    on_for_time(-20, 250);
     sleep(150);
 }
 
@@ -440,9 +427,7 @@ void place_sandbags() {
     //Opens the claw to let go of the sandbags
     ev3_motor_rotate(grab_motor, 50, 80, true);
     //Backs up for 325ms to make the claw only grab one sandbag
-    ev3_motor_steer(left_motor, right_motor, -20, 0);
-    sleep(325);
-    motor_stop();
+    on_for_time(-20, 325);
     sleep(150);
     //Closes the claw around the second sandbag
     ev3_motor_rotate(grab_motor, -40, 80, true);
