@@ -6,8 +6,6 @@
 #define ClearTimer(...)
 #define ClearTimerMS(...)
 
-const sensor_port_t gyro = EV3_PORT_1;
-
 void go_to_line() {
     while (ev3_color_sensor_get_reflect(s1) > 30) {
         ev3_motor_steer(left_motor, right_motor, 50, 0);
@@ -67,7 +65,7 @@ void ramp_motors(int speed) {
     int power = 0;
     while ((TimerMS(0) - time0) < 500) {
         power = (500 - (TimerMS(0) - time0)) * ((speed - 10)/500);
-        ev3_motor_steer(left_motor, right_motor, (speed - power), 0);
+        ev3_motor_steer(left_motor, right_motor, (speed - power), 2);
     }
 }
 
@@ -78,7 +76,7 @@ void brake_motors(int speed) {
     int power = 0;
     while ((TimerMS(0) - time0) < 500) {
         power = (500 - (TimerMS(0) - time0)) * (speed/500);
-        ev3_motor_steer(left_motor, right_motor, (power), 0);
+        ev3_motor_steer(left_motor, right_motor, (power), 2);
     }
 }
 
