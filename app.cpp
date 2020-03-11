@@ -231,6 +231,12 @@ void turn(int angle, int slow=1) {
     motor_stop();
 }
 
+void stop(int speed) {
+    //Gradually slows down the motors to 10% power then stops them
+    brake_motors(speed);
+    motor_stop();
+}
+
 void run_to_line(int speed) {
     //Checks for white then black on both the sensors to stop at the black line
     while (ev3_color_sensor_get_color(s1) != COLOR_WHITE && ev3_color_sensor_get_color(s2) != COLOR_WHITE){
@@ -240,12 +246,6 @@ void run_to_line(int speed) {
         ev3_motor_steer(left_motor, right_motor, speed, 2);
     }
     stop(speed);
-}
-
-void stop(int speed) {
-    //Gradually slows down the motors to 10% power then stops them
-    brake_motors(speed);
-    motor_stop();
 }
 
 void on_for_time(int speed, int time) {
@@ -369,7 +369,7 @@ void go_to_house() {
     //Goes forward to about the middle, to avoid false detection triggers of the next action
     on_for_counts_motor(600, 40, 0);
     //Checks for white then black on both the sensors to stop at the black line
-    run_to_line(30);
+    run_to_line(40);
     //Backs up from the line to allow the robot to align itself after
     on_for_time(-20, 250);
     sleep(150);
@@ -408,8 +408,10 @@ void check_concrete_color_marker() {
     ev3_motor_rotate(lift_motor, 173, 30, true);
     //Goes backwards to be set up for the turn
     on_for_counts_motor(200, -15);
+    sleep(1000);
     //Turns left to go towards the concrete block color indicator (the slight undershoot is because the robot follows the line and will correct itself)
     turn(-87);
+    sleep(1000);
     //Follows the line until the black T intersection
     follow_to_line(1, -1);
     //Goes forward to get closer to the concrete color marker
@@ -419,6 +421,19 @@ void check_concrete_color_marker() {
     //Measure the RGB color
     ht_nxt_color_sensor_measure_rgb(hitechnic, &color);
     //Sends the values to the bluetooth terminal on the computer to check the data
+    fprintf(bt, "%d\n", color.r);
+    fprintf(bt, "%d\n", color.g);
+    fprintf(bt, "%d\n", color.b);
+}
+
+void check_block() {
+    rgb_raw_t color;
+    ht_nxt_color_sensor_measure_rgb(hitechnic, &color);
+    fprintf(bt, "%d\n", color.r);
+    fprintf(bt, "%d\n", color.g);
+    fprintf(bt, "%d\n", color.b);
+    sleep(4000);
+    ht_nxt_color_sensor_measure_rgb(hitechnic, &color);
     fprintf(bt, "%d\n", color.r);
     fprintf(bt, "%d\n", color.g);
     fprintf(bt, "%d\n", color.b);
@@ -442,4 +457,5 @@ void main_task(intptr_t unused) {
     ev3_gyro_sensor_reset(gyro);
     //3 second sleep to allow all sensors to fully start up (notably the EV3 color sensors)
     sleep(3000);
+    check_block(); 
 }

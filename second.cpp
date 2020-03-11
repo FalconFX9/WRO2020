@@ -73,6 +73,7 @@ void gyro_turns(int angle) {
     motor_stop();
 }
 
+/*
 void follow_for_counts(int counts, int option = 0, int side = 1) {
     //Follows the line for specified counts
     //Option changes what sensor is used, while side changes the side of the line the sensor will follow.
@@ -124,3 +125,4 @@ void follow_for_lines(int lines, int side = 1, int option = 0) {
     }
     motor_stop();
 }
+*/
