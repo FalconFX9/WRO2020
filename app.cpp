@@ -190,8 +190,16 @@ void sleep(unsigned long ms) {
     ClearTimerMS(0);
     ClearTimer(0);
     time0 = TimerMS(0);
-    while ((TimerMS(0) - time0) < ms) {  
+    while ((TimerMS(0) - time0) < ms) { 
     }
+}
+
+rgb_raw_t get_rgb() {
+    rgb_raw_t color;
+    ht_nxt_color_sensor_measure_rgb(hitechnic, &color);
+    sleep(10);
+    ht_nxt_color_sensor_measure_rgb(hitechnic, &color);
+    return color;
 }
 
 void lower() {
@@ -352,7 +360,7 @@ void get_sandbags_from_start() {
     //Deactivates the brake on the motor
     ev3_motor_stop(lift_motor, false);
     //Goes forward for 200 counts, with a target angle of 90 (to get to the sanbags)
-    on_for_counts(200, 20, 1, 90);
+    on_for_counts(220, 10, 1, 90);
     //Closes claw to be the width of the sandbags
     ev3_motor_rotate(grab_motor, -155, 30, true);
     //Lifts the claw
@@ -362,7 +370,7 @@ void get_sandbags_from_start() {
 
 void go_to_house() {
     //Goes backwards to the intersection between the black and blue line
-    on_for_counts_motor(540, -50);
+    on_for_counts_motor(480, -50);
     //Turns right with a slight overshoot (seems to be necessary)
     turn(95);
     sleep(150);
@@ -419,7 +427,7 @@ void check_concrete_color_marker() {
     //Lowers the claw to place the hitechnic sensor in front of the marker
     ev3_motor_rotate(lift_motor, -178, 30, true);
     //Measure the RGB color
-    ht_nxt_color_sensor_measure_rgb(hitechnic, &color);
+    color = get_rgb();
     //Sends the values to the bluetooth terminal on the computer to check the data
     fprintf(bt, "%d\n", color.r);
     fprintf(bt, "%d\n", color.g);
@@ -429,14 +437,19 @@ void check_concrete_color_marker() {
 void check_block() {
     rgb_raw_t color;
     ht_nxt_color_sensor_measure_rgb(hitechnic, &color);
-    fprintf(bt, "%d\n", color.r);
-    fprintf(bt, "%d\n", color.g);
-    fprintf(bt, "%d\n", color.b);
+    sleep(10);
+    //ht_nxt_color_sensor_measure_rgb(hitechnic, &color);
+    fprintf(bt, "1: %d %d %d \n", color.r, color.g, color.b);
     sleep(4000);
     ht_nxt_color_sensor_measure_rgb(hitechnic, &color);
-    fprintf(bt, "%d\n", color.r);
-    fprintf(bt, "%d\n", color.g);
-    fprintf(bt, "%d\n", color.b);
+    sleep(10);
+    //ht_nxt_color_sensor_measure_rgb(hitechnic, &color);
+    fprintf(bt, "2: %d %d %d \n", color.r, color.g, color.b);
+    sleep(4000);
+    ht_nxt_color_sensor_measure_rgb(hitechnic, &color);
+    sleep(10);
+    //ht_nxt_color_sensor_measure_rgb(hitechnic, &color);
+    fprintf(bt, "3: %d %d %d \n", color.r, color.g, color.b);
 }
 
 void main_task(intptr_t unused) {
@@ -456,6 +469,8 @@ void main_task(intptr_t unused) {
     //Resets the gyro sensor
     ev3_gyro_sensor_reset(gyro);
     //3 second sleep to allow all sensors to fully start up (notably the EV3 color sensors)
-    sleep(3000);
-    check_block(); 
+    get_sandbags_from_start();
+    go_to_house();
+    place_sandbags();
+    check_concrete_color_marker();
 }
